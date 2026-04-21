@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const studentSchema = new mongoose.Schema({
   name: String,
   usn: {
@@ -11,3 +13,5 @@ const studentSchema = new mongoose.Schema({
   hostelBlock: String,
   roomNumber: String
 });
+
+module.exports = mongoose.model('Student', studentSchema);
