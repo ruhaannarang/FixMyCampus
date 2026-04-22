@@ -5,7 +5,7 @@ const { verifyStudent, verifyAdmin, verifyAnyUser } = require('../middleware/aut
 const { upload } = require('../config/cloudinary');
 
 // Create a new complaint (Student only)
-router.post('/', verifyStudent, upload.single('image'), async (req, res) => {
+router.post('/newcomplaint', verifyStudent, upload.single('image'), async (req, res) => {
   try {
     const { title, description, category, isAnonymous } = req.body;
     
@@ -43,7 +43,7 @@ router.get('/', verifyAnyUser, async (req, res) => {
       // Students only see their own complaints
       complaints = await Complaint.find({ studentId: req.user.id }).sort({ createdAt: -1 });
       res.json(complaints);
-    } else {
+    } else if (userRole === 'warden' || userRole === 'faculty' || userRole === 'admin') {
       // Admins (Warden/Faculty) can see complaints
       // Optionally we could filter based on the admin's role, but let's return all based on category filter if sent
       const { category } = req.query;
@@ -65,10 +65,82 @@ router.get('/', verifyAnyUser, async (req, res) => {
       });
 
       res.json(complaints);
+    } else {
+      res.status(403).json({ error: 'Access denied. Invalid role.' });
     }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error while fetching complaints.' });
+  }
+});
+
+// Get all hostel complaints
+router.get('/hostel/all', verifyAnyUser, async (req, res) => {
+  try {
+    const userRole = req.user.role;
+    let complaints;
+
+    if (userRole === 'student') {
+      // Students only see their own hostel complaints
+      complaints = await Complaint.find({ studentId: req.user.id, category: 'hostel' }).sort({ createdAt: -1 });
+      res.json(complaints);
+    } else if (userRole === 'warden' || userRole === 'faculty' || userRole === 'admin') {
+      // Admins can see all hostel complaints
+      const rawComplaints = await Complaint.find({ category: 'hostel' })
+        .populate('studentId', 'name usn branch year hostelBlock roomNumber')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Mask student details if anonymous
+      complaints = rawComplaints.map(complaint => {
+        if (complaint.isAnonymous) {
+          complaint.studentId = null;
+        }
+        return complaint;
+      });
+
+      res.json(complaints);
+    } else {
+      res.status(403).json({ error: 'Access denied. Invalid role.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error while fetching hostel complaints.' });
+  }
+});
+
+// Get all college complaints
+router.get('/college/all', verifyAnyUser, async (req, res) => {
+  try {
+    const userRole = req.user.role;
+    let complaints;
+
+    if (userRole === 'student') {
+      // Students only see their own college complaints
+      complaints = await Complaint.find({ studentId: req.user.id, category: 'college' }).sort({ createdAt: -1 });
+      res.json(complaints);
+    } else if (userRole === 'warden' || userRole === 'faculty' || userRole === 'admin') {
+      // Admins can see all college complaints
+      const rawComplaints = await Complaint.find({ category: 'college' })
+        .populate('studentId', 'name usn branch year hostelBlock roomNumber')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Mask student details if anonymous
+      complaints = rawComplaints.map(complaint => {
+        if (complaint.isAnonymous) {
+          complaint.studentId = null;
+        }
+        return complaint;
+      });
+
+      res.json(complaints);
+    } else {
+      res.status(403).json({ error: 'Access denied. Invalid role.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error while fetching college complaints.' });
   }
 });
 

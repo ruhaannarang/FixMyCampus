@@ -5,18 +5,16 @@ const jwt = require('jsonwebtoken');
 const Student = require('../models/Student');
 const Admin = require('../models/admin');
 
-// --- Student Auth ---
 
-// Student Signup
 router.post('/student/signup', async (req, res) => {
   try {
     const { name, usn, password, branch, year, hostelBlock, roomNumber } = req.body;
 
-    // Check if USN already exists
+  
     let student = await Student.findOne({ usn });
     if (student) return res.status(400).json({ error: 'Student with this USN already exists.' });
 
-    // Hash Password
+  
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -25,7 +23,7 @@ router.post('/student/signup', async (req, res) => {
     });
     await student.save();
 
-    // Create JWT
+
     const token = jwt.sign({ id: student._id, role: 'student' }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ token, student: { id: student._id, name: student.name, usn: student.usn } });
   } catch (error) {
@@ -33,7 +31,7 @@ router.post('/student/signup', async (req, res) => {
   }
 });
 
-// Student Login
+
 router.post('/student/login', async (req, res) => {
   try {
     const { usn, password } = req.body;
@@ -51,9 +49,7 @@ router.post('/student/login', async (req, res) => {
   }
 });
 
-// --- Admin Auth ---
 
-// Admin Signup
 router.post('/admin/signup', async (req, res) => {
   try {
     const { name, email, password, role, department, hostelAssigned } = req.body;
@@ -80,7 +76,7 @@ router.post('/admin/signup', async (req, res) => {
   }
 });
 
-// Admin Login
+
 router.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
