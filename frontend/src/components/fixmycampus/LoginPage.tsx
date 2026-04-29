@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GraduationCap, ShieldCheck, UserCog, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface LoginPageProps {
   onLogin: (role: Role) => void;
@@ -20,16 +22,83 @@ const roles: { id: Role; label: string; sub: string; icon: typeof GraduationCap 
 export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [role, setRole] = useState<Role>("student");
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [loading, setLoading] = useState(false);
+
+  // Form states
+  const [name, setName] = useState("");
+  const [emailUsn, setEmailUsn] = useState(""); // used for USN (student) or Email (admin/warden)
+  const [password, setPassword] = useState("");
+  const [branch, setBranch] = useState("");
+  const [year, setYear] = useState("");
+  const [hostelBlock, setHostelBlock] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
+  const [department, setDepartment] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (mode === "login") {
+        const data = role === "student" 
+          ? { usn: emailUsn, password }
+          : { email: emailUsn, password };
+        const res = await api.login(role, data);
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("user", JSON.stringify(res[role === 'student' ? 'student' : 'admin']));
+        localStorage.setItem("role", res.admin?.role || role);
+        toast.success("Welcome back!");
+        onLogin(res.admin?.role || role);
+      } else {
+        let res;
+        if (role === "student") {
+          res = await api.signup(role, {
+            name,
+            usn: emailUsn,
+            password,
+            branch,
+            year: parseInt(year),
+            hostelBlock,
+            roomNumber,
+          });
+          localStorage.setItem("token", res.token);
+          localStorage.setItem("user", JSON.stringify(res.student));
+          localStorage.setItem("role", "student");
+          toast.success("Account created successfully!");
+          onLogin("student");
+        } else {
+          // Both admin and warden use the admin schema
+          res = await api.signup(role, {
+            name,
+            email: emailUsn,
+            password,
+            role: role === "warden" ? "warden" : "faculty",
+            department,
+            hostelAssigned: hostelBlock,
+          });
+          localStorage.setItem("token", res.token);
+          localStorage.setItem("user", JSON.stringify(res.admin));
+          localStorage.setItem("role", res.admin.role);
+          toast.success("Account created successfully!");
+          onLogin(res.admin.role);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-hero flex items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+    <div className="min-h-screen w-full bg-gradient-hero flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center my-auto">
         {/* Left: brand */}
         <div className="hidden lg:flex flex-col gap-6 pr-8">
           <Logo size="lg" />
           <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight text-foreground">
             One tap to{" "}
-            <span className="bg-gradient-primary bg-clip-text text-transparent">fix anything</span>{" "}
+            <span className="bg-gradient-primary bg-clip-text ">fix anything</span>{" "}
             on campus.
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -87,6 +156,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                 <button
                   key={r.id}
                   onClick={() => setRole(r.id)}
+                  type="button"
                   className={cn(
                     "flex flex-col items-center text-center gap-2 p-3 rounded-xl border-2 transition-all",
                     active
@@ -117,44 +187,81 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
 
           {/* Form */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onLogin(role);
-            }}
+            onSubmit={handleSubmit}
             className="space-y-4"
           >
             {mode === "signup" && (
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full name</Label>
-                <Input id="name" placeholder="Aarav Mehta" required className="h-11 rounded-xl" />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Aarav Mehta" required className="h-11 rounded-xl" />
               </div>
             )}
             <div className="space-y-1.5">
-              <Label htmlFor="email">Campus email</Label>
+              <Label htmlFor="emailUsn">{role === 'student' ? 'USN' : 'Campus Email'}</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="you@campus.edu"
-                defaultValue="aarav@campus.edu"
+                id="emailUsn"
+                type={role === 'student' ? 'text' : 'email'}
+                placeholder={role === 'student' ? '1RV20CS001' : 'you@campus.edu'}
+                value={emailUsn}
+                onChange={(e) => setEmailUsn(e.target.value)}
                 required
                 className="h-11 rounded-xl"
               />
             </div>
+            {mode === "signup" && role === "student" && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="branch">Branch</Label>
+                    <Input id="branch" value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="CSE" required className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="year">Year</Label>
+                    <Input id="year" type="number" min="1" max="5" value={year} onChange={(e) => setYear(e.target.value)} placeholder="3" required className="h-11 rounded-xl" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="hostelBlock">Hostel Block</Label>
+                    <Input id="hostelBlock" value={hostelBlock} onChange={(e) => setHostelBlock(e.target.value)} placeholder="B-Block" required className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="roomNumber">Room Number</Label>
+                    <Input id="roomNumber" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="204" required className="h-11 rounded-xl" />
+                  </div>
+                </div>
+              </>
+            )}
+            {mode === "signup" && role !== "student" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="department">Department</Label>
+                  <Input id="department" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Computer Science" required className="h-11 rounded-xl" />
+                </div>
+                {role === "warden" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="hostelAssigned">Assigned Hostel</Label>
+                    <Input id="hostelAssigned" value={hostelBlock} onChange={(e) => setHostelBlock(e.target.value)} placeholder="B-Block" required className="h-11 rounded-xl" />
+                  </div>
+                )}
+              </>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                defaultValue="demopass"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="h-11 rounded-xl"
               />
             </div>
 
-            <Button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold shadow-glow">
-              {mode === "login" ? "Sign in" : "Create account"}
-              <ArrowRight className="h-4 w-4 ml-1.5" />
+            <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl text-sm font-semibold shadow-glow">
+              {loading ? "Processing..." : mode === "login" ? "Sign in" : "Create account"}
+              {!loading && <ArrowRight className="h-4 w-4 ml-1.5" />}
             </Button>
           </form>
 

@@ -131,9 +131,9 @@
 }
 
 @layer utilities {
-  .bg-gradient-primary {
+  /* .bg-gradient-primary {
     background: var(--gradient-primary);
-  }
+  } */
   .bg-gradient-hero {
     background: var(--gradient-hero);
   }

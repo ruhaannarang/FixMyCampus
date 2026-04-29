@@ -1,31 +1,40 @@
-export type Role = "student" | "warden" | "admin";
+export type Role = "student" | "warden" | "faculty" | "admin";
 
 export type ComplaintStatus = "pending" | "approved" | "resolved" | "rejected";
 
-export type ComplaintCategory =
-  | "water"
-  | "electricity"
-  | "food"
-  | "internet"
-  | "cleaning"
-  | "maintenance"
-  | "security";
+export type ComplaintCategory = "hostel" | "college";
 
-export type Priority = "low" | "medium" | "high";
+export interface Student {
+  _id: string;
+  name: string;
+  usn: string;
+  branch?: string;
+  year?: number;
+  hostelBlock?: string;
+  roomNumber?: string;
+}
+
+export interface Comment {
+  _id?: string;
+  text: string;
+  authorName: string;
+  role: string;
+  createdAt: string;
+}
 
 export interface Complaint {
-  id: string;
+  _id: string;
   title: string;
   category: ComplaintCategory;
   description: string;
+  image?: string;
   status: ComplaintStatus;
-  priority: Priority;
   createdAt: string;
-  student: string;
-  room: string;
-  hostel: string;
-  upvotes: number;
-  downvotes: number;
-  userVote?: "up" | "down" | null;
-  timeline: { label: string; date: string; done: boolean }[];
+  studentId: Student | null;
+  isAnonymous: boolean;
+  upvotes: string[];
+  approvedAt?: string;
+  rejectedAt?: string;
+  resolvedAt?: string;
+  comments: Comment[];
 }

@@ -1,9 +1,9 @@
-import { ArrowBigDown, ArrowBigUp } from "lucide-react";
+import { ArrowBigUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Complaint } from "@/types/fixmycampus";
 
 interface Props {
-  complaint: Pick<Complaint, "id" | "upvotes" | "downvotes" | "userVote">;
+  complaint: Pick<Complaint, "_id" | "upvotes">;
   onVote: (id: string, vote: "up" | "down") => void;
   orientation?: "vertical" | "horizontal";
   size?: "sm" | "md";
@@ -15,13 +15,13 @@ export const VoteButtons = ({
   orientation = "vertical",
   size = "md",
 }: Props) => {
-  const score = complaint.upvotes - complaint.downvotes;
-  const isUp = complaint.userVote === "up";
-  const isDown = complaint.userVote === "down";
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const upvotesCount = complaint.upvotes?.length || 0;
+  const isUp = complaint.upvotes?.includes(user._id);
 
   const handle = (e: React.MouseEvent, vote: "up" | "down") => {
     e.stopPropagation();
-    onVote(complaint.id, vote);
+    onVote(complaint._id, vote);
   };
 
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
@@ -31,7 +31,7 @@ export const VoteButtons = ({
     <div
       className={cn(
         "flex items-center bg-secondary/60 rounded-full p-0.5 border border-border shrink-0",
-        orientation === "vertical" ? "flex-col" : "flex-row gap-0.5",
+        orientation === "vertical" ? "flex-col py-1" : "flex-row gap-0.5 px-1",
       )}
       onClick={(e) => e.stopPropagation()}
     >
@@ -54,27 +54,13 @@ export const VoteButtons = ({
         className={cn(
           "font-bold tabular-nums text-center min-w-[1.5rem]",
           size === "sm" ? "text-xs" : "text-sm",
-          isUp ? "text-success" : isDown ? "text-destructive" : "text-foreground",
+          isUp ? "text-success" : "text-foreground",
           orientation === "horizontal" && "px-1",
+          orientation === "vertical" && "py-0.5"
         )}
       >
-        {score}
+        {upvotesCount}
       </span>
-      <button
-        type="button"
-        onClick={(e) => handle(e, "down")}
-        aria-label="Downvote"
-        aria-pressed={isDown}
-        className={cn(
-          "rounded-full flex items-center justify-center transition-all",
-          btnSize,
-          isDown
-            ? "bg-destructive text-destructive-foreground shadow-sm scale-105"
-            : "text-muted-foreground hover:text-destructive hover:bg-destructive-soft",
-        )}
-      >
-        <ArrowBigDown className={cn(iconSize, isDown && "fill-current")} strokeWidth={2} />
-      </button>
     </div>
   );
 };

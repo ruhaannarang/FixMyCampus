@@ -1,8 +1,6 @@
 import { Complaint } from "@/types/fixmycampus";
 import { categoryMeta } from "./CategoryIcon";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -16,9 +14,6 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
-  Server,
-  Users,
-  AlertTriangle,
 } from "lucide-react";
 
 interface Props {
@@ -29,28 +24,19 @@ export const AdminDashboard = ({ complaints }: Props) => {
   const total = complaints.length;
   const resolved = complaints.filter((c) => c.status === "resolved").length;
   const pending = complaints.filter((c) => c.status === "pending").length;
-  const resolutionRate = Math.round((resolved / total) * 100);
-
-  const trendData = [
-    { day: "Mon", complaints: 12, resolved: 9 },
-    { day: "Tue", complaints: 18, resolved: 14 },
-    { day: "Wed", complaints: 14, resolved: 12 },
-    { day: "Thu", complaints: 22, resolved: 16 },
-    { day: "Fri", complaints: 27, resolved: 20 },
-    { day: "Sat", complaints: 16, resolved: 14 },
-    { day: "Sun", complaints: 9, resolved: 8 },
-  ];
+  const approved = complaints.filter((c) => c.status === "approved").length;
+  const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
   const categoryData = (Object.keys(categoryMeta) as (keyof typeof categoryMeta)[]).map((c) => ({
     name: categoryMeta[c].label,
-    value: complaints.filter((x) => x.category === c).length || Math.floor(Math.random() * 8) + 2,
+    value: complaints.filter((x) => x.category === c).length,
   }));
 
   const stats = [
     {
       label: "Total complaints",
       value: total,
-      delta: "+12%",
+      delta: `${approved} approved`,
       icon: Activity,
       tint: "bg-primary-soft text-primary",
     },
@@ -64,24 +50,10 @@ export const AdminDashboard = ({ complaints }: Props) => {
     {
       label: "Pending review",
       value: pending,
-      delta: "Avg 4h response",
+      delta: `${approved} in progress`,
       icon: Clock,
       tint: "bg-warning-soft text-warning",
     },
-    {
-      label: "Active students",
-      value: 2436,
-      delta: "+48 this week",
-      icon: Users,
-      tint: "bg-info-soft text-info",
-    },
-  ];
-
-  const systems = [
-    { name: "API Gateway", status: "Operational", uptime: "99.98%", ok: true },
-    { name: "Notification Service", status: "Operational", uptime: "99.94%", ok: true },
-    { name: "Storage", status: "Degraded", uptime: "97.21%", ok: false },
-    { name: "Auth Provider", status: "Operational", uptime: "100%", ok: true },
   ];
 
   return (
@@ -89,12 +61,12 @@ export const AdminDashboard = ({ complaints }: Props) => {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Campus Overview</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Real-time view of complaints, performance, and platform health.
+          Real-time view of complaints and performance.
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
@@ -120,129 +92,74 @@ export const AdminDashboard = ({ complaints }: Props) => {
         })}
       </div>
 
-      {/* Charts */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="bg-card rounded-2xl border border-border p-5 shadow-sm lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-foreground">Weekly activity</h3>
-              <p className="text-xs text-muted-foreground">Complaints filed vs resolved</p>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-primary" /> Filed
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-success" /> Resolved
-              </span>
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="complaints"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2.5}
-                  fill="url(#g1)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="resolved"
-                  stroke="hsl(var(--success))"
-                  strokeWidth={2.5}
-                  fill="url(#g2)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-          <h3 className="font-bold text-foreground mb-1">By category</h3>
-          <p className="text-xs text-muted-foreground mb-4">This month</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  width={80}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Category breakdown chart */}
+      <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+        <h3 className="font-bold text-foreground mb-1">By category</h3>
+        <p className="text-xs text-muted-foreground mb-4">Complaint distribution</p>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis
+                dataKey="name"
+                type="category"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                width={80}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                }}
+              />
+              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* System monitoring */}
+      {/* Recent complaints overview */}
       <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Server className="h-4 w-4 text-primary" />
-            <h3 className="font-bold text-foreground">System monitoring</h3>
-          </div>
-          <span className="text-xs font-semibold text-success bg-success-soft px-2.5 py-1 rounded-full">
-            All Systems Mostly Operational
-          </span>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {systems.map((sys) => (
+        <h3 className="font-bold text-foreground mb-4">Recent complaints</h3>
+        <div className="space-y-3">
+          {complaints.slice(0, 5).map((c) => (
             <div
-              key={sys.name}
-              className="rounded-xl border border-border p-4 bg-secondary/40"
+              key={c._id}
+              className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/40"
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">{sys.name}</span>
-                {sys.ok ? (
-                  <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                ) : (
-                  <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground truncate">{c.title}</p>
+                <p className="text-xs font-medium text-foreground mt-0.5">
+                  {c.isAnonymous ? "🔒 Anonymous" : `👤 ${c.studentId?.name || "Unknown"}`}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {c.category} · {new Date(c.createdAt).toLocaleDateString()}
+                </p>
               </div>
-              <p className={`text-xs font-semibold ${sys.ok ? "text-success" : "text-warning"}`}>
-                {sys.status}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Uptime {sys.uptime}</p>
+              <span
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                  c.status === "pending"
+                    ? "bg-warning-soft text-warning"
+                    : c.status === "approved"
+                      ? "bg-info-soft text-info"
+                      : c.status === "resolved"
+                        ? "bg-success-soft text-success"
+                        : "bg-destructive-soft text-destructive"
+                }`}
+              >
+                {c.status}
+              </span>
             </div>
           ))}
+          {complaints.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">No complaints yet.</p>
+          )}
         </div>
       </div>
     </div>

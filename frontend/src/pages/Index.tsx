@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Complaint, Role } from "@/types/fixmycampus";
-import { mockComplaints } from "@/data/mockComplaints";
 import { LoginPage } from "@/components/fixmycampus/LoginPage";
 import { AppShell, View } from "@/components/fixmycampus/AppShell";
 import { StudentDashboard } from "@/components/fixmycampus/StudentDashboard";
@@ -9,54 +8,83 @@ import { WardenDashboard } from "@/components/fixmycampus/WardenDashboard";
 import { AdminDashboard } from "@/components/fixmycampus/AdminDashboard";
 import { TrackingPage } from "@/components/fixmycampus/TrackingPage";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 const defaultViewByRole: Record<Role, View> = {
   student: "student-dashboard",
   warden: "warden-dashboard",
+  faculty: "admin-dashboard",
   admin: "admin-dashboard",
 };
 
 const Index = () => {
-  const [role, setRole] = useState<Role | null>(null);
-  const [view, setView] = useState<View>("student-dashboard");
+  const [role, setRole] = useState<Role | null>(() => {
+    return localStorage.getItem("role") as Role | null;
+  });
+  const [view, setView] = useState<View>(role ? defaultViewByRole[role] : "student-dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [complaints, setComplaints] = useState<Complaint[]>(mockComplaints);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleVote = (id: string, vote: "up" | "down") => {
-    setComplaints((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c;
-        const current = c.userVote ?? null;
-        let upvotes = c.upvotes;
-        let downvotes = c.downvotes;
-        let next: "up" | "down" | null = vote;
-
-        // remove previous
-        if (current === "up") upvotes -= 1;
-        if (current === "down") downvotes -= 1;
-
-        if (current === vote) {
-          // toggle off
-          next = null;
-        } else {
-          if (vote === "up") upvotes += 1;
-          else downvotes += 1;
-        }
-
-        return { ...c, upvotes, downvotes, userVote: next };
-      }),
-    );
-    const target = complaints.find((c) => c.id === id);
-    if (target) {
-      const wasSame = target.userVote === vote;
-      if (wasSame) {
-        toast(`Vote removed on ${id}`);
-      } else {
-        toast.success(
-          vote === "up" ? `Upvoted ${id} — thanks for confirming!` : `Downvoted ${id}`,
-        );
-      }
+  const fetchComplaints = async () => {
+    if (!role) return;
+    setLoading(true);
+    try {
+      const data = await api.getComplaints();
+      setComplaints(data);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load complaints");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (role) {
+      fetchComplaints();
+    }
+  }, [role]);
+
+  const handleVote = async (id: string, vote: "up" | "down") => {
+    try {
+      if (vote === "down") {
+        toast.error("Downvoting is not supported by backend yet.");
+        return;
+      }
+      
+      const res = await api.toggleUpvote(id);
+      
+      setComplaints((prev) =>
+        prev.map((c) => {
+          if (c._id !== id) return c;
+          
+          // Update the specific complaint with backend response
+          return { ...c, upvotes: res.upvotes };
+        }),
+      );
+      toast.success(res.message);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upvote");
+    }
+  };
+  
+  const handleStatusUpdate = async (id: string, status: string) => {
+    try {
+      const updated = await api.updateStatus(id, status);
+      setComplaints((prev) =>
+        prev.map((c) => (c._id === id ? { ...c, ...updated } : c)),
+      );
+      toast.success(`Complaint marked as ${status}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update status");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
+    setRole(null);
   };
 
   if (!role) {
@@ -75,7 +103,7 @@ const Index = () => {
       role={role}
       view={view}
       onNavigate={setView}
-      onLogout={() => setRole(null)}
+      onLogout={handleLogout}
     >
       {view === "student-dashboard" && (
         <StudentDashboard
@@ -83,6 +111,7 @@ const Index = () => {
           onNavigate={setView}
           onSelect={setSelectedId}
           onVote={handleVote}
+          loading={loading}
         />
       )}
       {view === "submit" && (
@@ -91,6 +120,7 @@ const Index = () => {
           onNavigate={setView}
           onVote={handleVote}
           onSelect={setSelectedId}
+          refreshData={fetchComplaints}
         />
       )}
       {view === "warden-dashboard" && (
@@ -99,6 +129,7 @@ const Index = () => {
           onSelect={setSelectedId}
           onNavigate={setView}
           onVote={handleVote}
+          onStatusUpdate={handleStatusUpdate}
         />
       )}
       {view === "admin-dashboard" && <AdminDashboard complaints={complaints} />}
@@ -108,6 +139,7 @@ const Index = () => {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onVote={handleVote}
+          refreshData={fetchComplaints}
         />
       )}
     </AppShell>

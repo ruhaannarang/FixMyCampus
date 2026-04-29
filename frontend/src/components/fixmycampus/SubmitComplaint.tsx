@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Complaint, ComplaintCategory, Priority } from "@/types/fixmycampus";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Complaint, ComplaintCategory } from "@/types/fixmycampus";
 import { categoryMeta, CategoryIcon } from "./CategoryIcon";
 import { StatusBadge } from "./StatusBadge";
 import { VoteButtons } from "./VoteButtons";
@@ -11,19 +12,25 @@ import { toast } from "sonner";
 import { ImagePlus, ArrowLeft, Send, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { View } from "./AppShell";
+import { api } from "@/lib/api";
 
 interface SubmitProps {
   onNavigate: (v: View) => void;
   complaints: Complaint[];
   onVote: (id: string, vote: "up" | "down") => void;
   onSelect: (id: string) => void;
+  refreshData?: () => void;
 }
 
-export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect }: SubmitProps) => {
+export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect, refreshData }: SubmitProps) => {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<ComplaintCategory>("water");
-  const [priority, setPriority] = useState<Priority>("medium");
-  const [image, setImage] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<ComplaintCategory>("hostel");
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const similar = useMemo(() => {
     const q = title.trim().toLowerCase();
@@ -45,27 +52,41 @@ export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect }: Su
   }, [title, category, complaints]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
       const reader = new FileReader();
-      reader.onload = () => setImage(reader.result as string);
-      reader.readAsDataURL(file);
+      reader.onload = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(selectedFile);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Complaint submitted!", {
-      description: "We've assigned ID FMC-2042. Track its status anytime.",
-    });
-    onNavigate("student-dashboard");
-  };
+    setLoading(true);
 
-  const priorities: { id: Priority; label: string; color: string }[] = [
-    { id: "low", label: "Low", color: "border-muted-foreground/30 data-[active=true]:bg-muted data-[active=true]:text-foreground" },
-    { id: "medium", label: "Medium", color: "border-info/30 data-[active=true]:bg-info-soft data-[active=true]:text-info data-[active=true]:border-info" },
-    { id: "high", label: "High", color: "border-destructive/30 data-[active=true]:bg-destructive-soft data-[active=true]:text-destructive data-[active=true]:border-destructive" },
-  ];
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("isAnonymous", isAnonymous.toString());
+      if (file) {
+        formData.append("image", file);
+      }
+
+      const newComplaint = await api.createComplaint(formData);
+      toast.success("Complaint submitted!", {
+        description: `We've assigned ID ${newComplaint._id.substring(0, 8)}. Track its status anytime.`,
+      });
+      if (refreshData) refreshData();
+      onNavigate("student-dashboard");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit complaint.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -118,21 +139,21 @@ export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect }: Su
               <div className="space-y-2">
                 {similar.map((c) => (
                   <div
-                    key={c.id}
+                    key={c._id}
                     className="bg-card rounded-xl border border-border p-3 flex items-center gap-3"
                   >
                     <VoteButtons complaint={c} onVote={onVote} size="sm" />
                     <button
                       type="button"
                       onClick={() => {
-                        onSelect(c.id);
+                        onSelect(c._id);
                         onNavigate("tracking");
                       }}
                       className="flex-1 min-w-0 text-left"
                     >
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-[10px] font-mono font-semibold text-muted-foreground">
-                          {c.id}
+                          {c._id.substring(0, 8)}
                         </span>
                         <StatusBadge status={c.status} />
                       </div>
@@ -182,48 +203,43 @@ export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect }: Su
             </div>
           </div>
 
-          {/* Priority */}
-          <div className="space-y-2">
-            <Label>Priority</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {priorities.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  data-active={priority === p.id}
-                  onClick={() => setPriority(p.id)}
-                  className={cn(
-                    "px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all bg-card text-foreground",
-                    p.color,
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Description */}
           <div className="space-y-1.5">
             <Label htmlFor="desc">Description</Label>
             <Textarea
               id="desc"
               required
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               rows={5}
               placeholder="Describe the issue, when it started, and any safety concerns..."
               className="rounded-xl resize-none"
             />
           </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox id="anonymous" checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(checked as boolean)} />
+            <label
+              htmlFor="anonymous"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Submit anonymously
+            </label>
+          </div>
 
           {/* Image upload */}
           <div className="space-y-2">
             <Label>Attach photo (optional)</Label>
-            {image ? (
+            {imagePreview ? (
               <div className="relative rounded-xl overflow-hidden border border-border">
-                <img src={image} alt="Upload preview" className="w-full max-h-64 object-cover" />
+                <img src={imagePreview} alt="Upload preview" className="w-full max-h-64 object-cover" />
                 <button
                   type="button"
-                  onClick={() => setImage(null)}
+                  onClick={() => {
+                    setImagePreview(null);
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
                   className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center text-foreground hover:bg-background"
                   aria-label="Remove image"
                 >
@@ -237,7 +253,7 @@ export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect }: Su
                 </div>
                 <p className="text-sm font-semibold text-foreground">Tap to upload a photo</p>
                 <p className="text-xs text-muted-foreground">PNG or JPG up to 5MB</p>
-                <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
               </label>
             )}
           </div>
@@ -252,9 +268,9 @@ export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect }: Su
             >
               Cancel
             </Button>
-            <Button type="submit" className="rounded-xl shadow-glow font-semibold">
+            <Button type="submit" disabled={loading} className="rounded-xl shadow-glow font-semibold">
               <Send className="h-4 w-4 mr-1.5" />
-              Submit complaint
+              {loading ? "Submitting..." : "Submit complaint"}
             </Button>
           </div>
         </form>

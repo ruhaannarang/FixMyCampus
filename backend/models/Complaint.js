@@ -24,7 +24,16 @@ const complaintSchema = new mongoose.Schema({
   status: {
     type: String,
     default: "pending"
-  }
+  },
+  approvedAt: Date,
+  rejectedAt: Date,
+  resolvedAt: Date,
+  comments: [{
+    text: { type: String, required: true },
+    authorName: { type: String, required: true },
+    role: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Complaint', complaintSchema);

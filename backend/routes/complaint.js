@@ -11,7 +11,7 @@ router.post('/newcomplaint', verifyStudent, upload.single('image'), async (req, 
     
     let imageUrl = '';
     if (req.file) {
-      imageUrl = req.file.path; // the URL provided by Cloudinary
+      imageUrl = '/uploads/' + req.file.filename;
     }
 
     const complaint = new Complaint({
@@ -177,11 +177,18 @@ router.put('/:id/status', verifyAdmin, async (req, res) => {
     const { status } = req.body;
     if (!status) return res.status(400).json({ error: 'No status provided.' });
 
+    const update = { status };
+
+    // Set the corresponding timestamp
+    if (status === 'approved') update.approvedAt = new Date();
+    else if (status === 'rejected') update.rejectedAt = new Date();
+    else if (status === 'resolved') update.resolvedAt = new Date();
+
     const complaint = await Complaint.findByIdAndUpdate(
       req.params.id,
-      { status },
+      update,
       { new: true }
-    );
+    ).populate('studentId', 'name usn branch year hostelBlock roomNumber');
 
     if (!complaint) return res.status(404).json({ error: 'Complaint not found.' });
 
@@ -215,6 +222,36 @@ router.put('/:id/upvote', verifyStudent, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error while toggling upvote.' });
+  }
+});
+
+// Add a comment to a complaint (Admin/Warden only)
+const Admin = require('../models/admin');
+
+router.post('/:id/comments', verifyAdmin, async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'Comment text is required.' });
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ error: 'Complaint not found.' });
+
+    // Get admin name from DB
+    const admin = await Admin.findById(req.user.id);
+    const authorName = admin ? admin.name : 'Admin';
+
+    complaint.comments.push({
+      text: text.trim(),
+      authorName,
+      role: req.user.role
+    });
+
+    await complaint.save();
+
+    res.status(201).json(complaint);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error while adding comment.' });
   }
 });
 

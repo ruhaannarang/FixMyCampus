@@ -40,6 +40,11 @@ const navByRole: Record<Role, { id: View; label: string; icon: typeof LayoutDash
     { id: "warden-dashboard", label: "Inbox", icon: ListChecks },
     { id: "tracking", label: "Track Tickets", icon: GitBranch },
   ],
+  faculty: [
+    { id: "admin-dashboard", label: "Overview", icon: BarChart3 },
+    { id: "warden-dashboard", label: "Complaints", icon: ListChecks },
+    { id: "tracking", label: "Tracking", icon: GitBranch },
+  ],
   admin: [
     { id: "admin-dashboard", label: "Overview", icon: BarChart3 },
     { id: "warden-dashboard", label: "Complaints", icon: ListChecks },
@@ -47,15 +52,23 @@ const navByRole: Record<Role, { id: View; label: string; icon: typeof LayoutDash
   ],
 };
 
-const roleMeta: Record<Role, { name: string; sub: string; initials: string }> = {
-  student: { name: "Aarav Mehta", sub: "Nilgiri Hostel · B-204", initials: "AM" },
-  warden: { name: "Dr. Priya Rao", sub: "Warden · Nilgiri Hostel", initials: "PR" },
-  admin: { name: "Sundar K.", sub: "Campus Administrator", initials: "SK" },
-};
-
 export const AppShell = ({ role, view, onNavigate, onLogout, children }: AppShellProps) => {
   const nav = navByRole[role];
-  const me = roleMeta[role];
+  
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const name = user.name || "User";
+  const initials = name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase();
+  
+  let sub = "";
+  if (role === "student") {
+    sub = user.hostelBlock ? `${user.hostelBlock} Hostel ${user.roomNumber ? '· Room ' + user.roomNumber : ''}` : "Student";
+  } else if (role === "warden") {
+    sub = user.hostelAssigned ? `Warden · ${user.hostelAssigned} Hostel` : "Warden";
+  } else {
+    sub = user.department ? `${user.department} Department` : "Administrator";
+  }
+
+  const me = { name, sub, initials };
 
   return (
     <div className="min-h-screen w-full bg-background flex">
@@ -92,6 +105,13 @@ export const AppShell = ({ role, view, onNavigate, onLogout, children }: AppShel
             <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent">
               <Settings className="h-4 w-4" />
               Settings
+            </button>
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive-soft transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
             </button>
           </div>
         </nav>

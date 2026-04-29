@@ -11,10 +11,11 @@ interface Props {
   onNavigate: (v: View) => void;
   onSelect: (id: string) => void;
   onVote: (id: string, vote: "up" | "down") => void;
+  loading?: boolean;
 }
 
-export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: Props) => {
-  const mine = complaints.filter((c) => c.student === "Aarav Mehta");
+export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote, loading }: Props) => {
+  const mine = complaints;
   const stats = [
     {
       label: "Pending",
@@ -36,6 +37,8 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
     },
   ];
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Hero */}
@@ -44,7 +47,7 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
         <div className="absolute -right-4 bottom-0 h-32 w-32 rounded-full bg-primary-foreground/10 blur-xl" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="text-primary-foreground">
-            <p className="text-sm font-medium opacity-90">Hostel B-204 · Nilgiri</p>
+            <p className="text-sm font-medium opacity-90">Hello, {user.name || "Student"}</p>
             <h1 className="text-2xl sm:text-3xl font-bold mt-1">Have an issue? We've got you.</h1>
             <p className="text-sm opacity-90 mt-1.5 max-w-md">
               Report any hostel or campus problem in under 30 seconds. Track every step in real time.
@@ -92,7 +95,7 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
             >
               <CategoryIcon category={cat} />
               <span className="text-xs font-medium text-foreground capitalize">
-                {categoryMeta[cat].label}
+                {categoryMeta[cat]?.label || cat}
               </span>
             </button>
           ))}
@@ -116,24 +119,24 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
         </div>
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
           {[...complaints]
-            .sort((a, b) => b.upvotes - b.downvotes - (a.upvotes - a.downvotes))
+            .sort((a, b) => (b.upvotes?.length || 0) - (a.upvotes?.length || 0))
             .slice(0, 4)
             .map((c) => (
               <div
-                key={c.id}
+                key={c._id}
                 className="bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-soft hover:border-primary/40 transition-all flex items-start gap-3"
               >
                 <VoteButtons complaint={c} onVote={onVote} />
                 <button
                   onClick={() => {
-                    onSelect(c.id);
+                    onSelect(c._id);
                     onNavigate("tracking");
                   }}
                   className="flex-1 min-w-0 text-left"
                 >
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-[11px] font-mono font-semibold text-muted-foreground">
-                      {c.id}
+                      {c._id.substring(0, 8)}
                     </span>
                     <StatusBadge status={c.status} />
                   </div>
@@ -144,11 +147,14 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
                     {c.description}
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-2">
-                    {c.hostel} · {categoryMeta[c.category].label}
+                    {categoryMeta[c.category]?.label || c.category}
                   </p>
                 </button>
               </div>
             ))}
+          {complaints.length === 0 && !loading && (
+            <p className="text-sm text-muted-foreground col-span-2">No complaints to show.</p>
+          )}
         </div>
       </section>
 
@@ -164,15 +170,15 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
           </button>
         </div>
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-          {mine.map((c) => (
+          {mine.slice(0, 10).map((c) => (
             <div
-              key={c.id}
+              key={c._id}
               className="bg-card rounded-2xl border border-border p-4 sm:p-5 shadow-sm hover:shadow-soft hover:border-primary/40 transition-all group flex items-start gap-3"
             >
               <VoteButtons complaint={c} onVote={onVote} size="sm" />
               <button
                 onClick={() => {
-                  onSelect(c.id);
+                  onSelect(c._id);
                   onNavigate("tracking");
                 }}
                 className="text-left flex-1 min-w-0"
@@ -182,7 +188,7 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-[11px] font-mono font-semibold text-muted-foreground">
-                        {c.id}
+                        {c._id.substring(0, 8)}
                       </span>
                       <StatusBadge status={c.status} />
                     </div>
@@ -192,12 +198,15 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote }: P
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {c.description}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">Filed {c.createdAt}</p>
+                    <p className="text-xs text-muted-foreground mt-2">Filed {new Date(c.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
               </button>
             </div>
           ))}
+          {mine.length === 0 && !loading && (
+            <p className="text-sm text-muted-foreground col-span-2">You haven't filed any complaints yet.</p>
+          )}
         </div>
       </section>
     </div>
