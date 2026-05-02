@@ -74,6 +74,29 @@ router.get('/', verifyAnyUser, async (req, res) => {
   }
 });
 
+// Get all complaints for community feed (Student only - sees all complaints from everyone)
+router.get('/community/all', verifyStudent, async (req, res) => {
+  try {
+    const rawComplaints = await Complaint.find()
+      .populate('studentId', 'name usn branch year hostelBlock roomNumber')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Mask student details if anonymous
+    const complaints = rawComplaints.map(complaint => {
+      if (complaint.isAnonymous) {
+        complaint.studentId = null;
+      }
+      return complaint;
+    });
+
+    res.json(complaints);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error while fetching community complaints.' });
+  }
+});
+
 // Get all hostel complaints
 router.get('/hostel/all', verifyAnyUser, async (req, res) => {
   try {

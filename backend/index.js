@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const complaintRoutes = require('./routes/complaint');
+const applicationRoutes = require('./routes/application');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
+app.use('/api/applications', applicationRoutes);
 
 app.get('/', (req, res) => {
   res.send('FixMyCampus API is running!');

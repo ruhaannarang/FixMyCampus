@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Complaint, Role } from "@/types/fixmycampus";
+import { Complaint, Role, Application } from "@/types/fixmycampus";
 import { LoginPage } from "@/components/fixmycampus/LoginPage";
 import { AppShell, View } from "@/components/fixmycampus/AppShell";
 import { StudentDashboard } from "@/components/fixmycampus/StudentDashboard";
@@ -7,6 +7,10 @@ import { SubmitComplaint } from "@/components/fixmycampus/SubmitComplaint";
 import { WardenDashboard } from "@/components/fixmycampus/WardenDashboard";
 import { AdminDashboard } from "@/components/fixmycampus/AdminDashboard";
 import { TrackingPage } from "@/components/fixmycampus/TrackingPage";
+import { TeacherDashboard } from "@/components/fixmycampus/TeacherDashboard";
+import { SendApplication } from "@/components/fixmycampus/SendApplication";
+import { MyApplications } from "@/components/fixmycampus/MyApplications";
+import { CommunityComplaints } from "@/components/fixmycampus/CommunityComplaints";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -15,6 +19,7 @@ const defaultViewByRole: Record<Role, View> = {
   warden: "warden-dashboard",
   faculty: "admin-dashboard",
   admin: "admin-dashboard",
+  teacher: "teacher-dashboard",
 };
 
 const Index = () => {
@@ -25,9 +30,10 @@ const Index = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(false);
+  const [teacherApplications, setTeacherApplications] = useState<Application[]>([]);
 
   const fetchComplaints = async () => {
-    if (!role) return;
+    if (!role || role === "teacher") return;
     setLoading(true);
     try {
       const data = await api.getComplaints();
@@ -39,9 +45,23 @@ const Index = () => {
     }
   };
 
+  const fetchTeacherInbox = async () => {
+    if (role !== "teacher") return;
+    try {
+      const data = await api.getTeacherInbox();
+      setTeacherApplications(data);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load applications");
+    }
+  };
+
   useEffect(() => {
     if (role) {
-      fetchComplaints();
+      if (role === "teacher") {
+        fetchTeacherInbox();
+      } else {
+        fetchComplaints();
+      }
     }
   }, [role]);
 
@@ -57,8 +77,6 @@ const Index = () => {
       setComplaints((prev) =>
         prev.map((c) => {
           if (c._id !== id) return c;
-          
-          // Update the specific complaint with backend response
           return { ...c, upvotes: res.upvotes };
         }),
       );
@@ -141,6 +159,21 @@ const Index = () => {
           onVote={handleVote}
           refreshData={fetchComplaints}
         />
+      )}
+      {view === "teacher-dashboard" && (
+        <TeacherDashboard
+          applications={teacherApplications}
+          onRefresh={fetchTeacherInbox}
+        />
+      )}
+      {view === "send-application" && (
+        <SendApplication onNavigate={setView} />
+      )}
+      {view === "my-applications" && (
+        <MyApplications onNavigate={setView} />
+      )}
+      {view === "community-complaints" && (
+        <CommunityComplaints onVote={handleVote} />
       )}
     </AppShell>
   );

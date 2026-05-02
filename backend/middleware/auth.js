@@ -34,6 +34,23 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
+// Middleware for authenticating teachers
+const verifyTeacher = (req, res, next) => {
+  const token = req.header('Authorization');
+  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+  try {
+    const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+    if (decoded.role !== 'teacher') {
+      return res.status(403).json({ error: 'Access denied. Must be a teacher.' });
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid token.' });
+  }
+};
+
 const verifyAnyUser = (req, res, next) => {
   const token = req.header('Authorization');
   if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -47,4 +64,4 @@ const verifyAnyUser = (req, res, next) => {
   }
 };
 
-module.exports = { verifyStudent, verifyAdmin, verifyAnyUser };
+module.exports = { verifyStudent, verifyAdmin, verifyTeacher, verifyAnyUser };

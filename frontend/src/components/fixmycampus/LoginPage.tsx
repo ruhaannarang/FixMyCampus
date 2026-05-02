@@ -4,7 +4,7 @@ import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, ShieldCheck, UserCog, ArrowRight, Sparkles } from "lucide-react";
+import { GraduationCap, ShieldCheck, UserCog, ArrowRight, Sparkles, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ interface LoginPageProps {
 
 const roles: { id: Role; label: string; sub: string; icon: typeof GraduationCap }[] = [
   { id: "student", label: "Student", sub: "Submit & track complaints", icon: GraduationCap },
+  { id: "teacher", label: "Teacher", sub: "Review applications", icon: BookOpen },
   { id: "warden", label: "Warden", sub: "Review & approve issues", icon: ShieldCheck },
   { id: "admin", label: "Admin", sub: "Monitor the campus", icon: UserCog },
 ];
@@ -33,6 +34,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [hostelBlock, setHostelBlock] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [department, setDepartment] = useState("");
+  const [teacherSubject, setTeacherSubject] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,10 +47,15 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
           : { email: emailUsn, password };
         const res = await api.login(role, data);
         localStorage.setItem("token", res.token);
-        localStorage.setItem("user", JSON.stringify(res[role === 'student' ? 'student' : 'admin']));
-        localStorage.setItem("role", res.admin?.role || role);
+        if (role === "teacher") {
+          localStorage.setItem("user", JSON.stringify(res.teacher));
+          localStorage.setItem("role", "teacher");
+        } else {
+          localStorage.setItem("user", JSON.stringify(res[role === 'student' ? 'student' : 'admin']));
+          localStorage.setItem("role", res.admin?.role || role);
+        }
         toast.success("Welcome back!");
-        onLogin(res.admin?.role || role);
+        onLogin(role === "teacher" ? "teacher" : (res.admin?.role || role));
       } else {
         let res;
         if (role === "student") {
@@ -66,6 +73,19 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
           localStorage.setItem("role", "student");
           toast.success("Account created successfully!");
           onLogin("student");
+        } else if (role === "teacher") {
+          res = await api.signup(role, {
+            name,
+            email: emailUsn,
+            password,
+            department,
+            subject: teacherSubject,
+          });
+          localStorage.setItem("token", res.token);
+          localStorage.setItem("user", JSON.stringify(res.teacher));
+          localStorage.setItem("role", "teacher");
+          toast.success("Account created successfully!");
+          onLogin("teacher");
         } else {
           // Both admin and warden use the admin schema
           res = await api.signup(role, {
@@ -148,7 +168,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
           </p>
 
           {/* Role selector */}
-          <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
             {roles.map((r) => {
               const Icon = r.icon;
               const active = role === r.id;
@@ -238,6 +258,12 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                   <Label htmlFor="department">Department</Label>
                   <Input id="department" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Computer Science" required className="h-11 rounded-xl" />
                 </div>
+                {role === "teacher" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="teacherSubject">Subject</Label>
+                    <Input id="teacherSubject" value={teacherSubject} onChange={(e) => setTeacherSubject(e.target.value)} placeholder="Data Structures & Algorithms" required className="h-11 rounded-xl" />
+                  </div>
+                )}
                 {role === "warden" && (
                   <div className="space-y-1.5">
                     <Label htmlFor="hostelAssigned">Assigned Hostel</Label>

@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Student = require('../models/Student');
 const Admin = require('../models/admin');
+const Teacher = require('../models/Teacher');
 
 
 router.post('/student/signup', async (req, res) => {
@@ -90,6 +91,50 @@ router.post('/admin/login', async (req, res) => {
     const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
   } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+// Teacher signup
+router.post('/teacher/signup', async (req, res) => {
+  try {
+    const { name, email, password, department, subject } = req.body;
+
+    let teacher = await Teacher.findOne({ email });
+    if (teacher) return res.status(400).json({ error: 'Teacher with this email already exists.' });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    teacher = new Teacher({
+      name, email, password: hashedPassword, department, subject
+    });
+    await teacher.save();
+
+    const token = jwt.sign({ id: teacher._id, role: 'teacher' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.status(201).json({ token, teacher: { id: teacher._id, name: teacher.name, email: teacher.email, department: teacher.department, subject: teacher.subject } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Teacher login
+router.post('/teacher/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const teacher = await Teacher.findOne({ email });
+    if (!teacher) return res.status(400).json({ error: 'Invalid credentials' });
+
+    const isMatch = await bcrypt.compare(password, teacher.password);
+    if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
+
+    const token = jwt.sign({ id: teacher._id, role: 'teacher' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, teacher: { id: teacher._id, name: teacher.name, email: teacher.email, department: teacher.department, subject: teacher.subject } });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 });
