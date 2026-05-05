@@ -165,7 +165,7 @@ export const TrackingPage = ({ complaints, selectedId, onSelect, onVote, refresh
                 <p className="text-sm text-foreground leading-relaxed">{active.description}</p>
                 {active.image && (
                   <div className="mt-4">
-                    <img src={`http://localhost:3000${active.image.startsWith('/') ? active.image : '/' + active.image}`} alt="Complaint" className="rounded-xl max-h-64 object-cover border border-border" />
+                    <img src={active.image.startsWith('http') ? active.image : `${import.meta.env.VITE_API_URL || '/api'}${active.image.startsWith('/') ? '' : '/'}${active.image}`} alt="Complaint" className="rounded-xl max-h-64 object-cover border border-border" />
                   </div>
                 )}
               </div>
