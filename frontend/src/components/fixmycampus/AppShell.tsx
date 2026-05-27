@@ -8,7 +8,6 @@ import {
   ListChecks,
   BarChart3,
   Settings,
-  Bell,
   LogOut,
   GitBranch,
   Send,
@@ -168,10 +167,6 @@ export const AppShell = ({ role, view, onNavigate, onLogout, children }: AppShel
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive" />
-              </Button>
               <div className="lg:hidden h-9 w-9 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
                 {me.initials}
               </div>
