@@ -1,0 +1,49 @@
+### Test Variables
+@baseUrl = http://localhost:3000/api
+# Uncomment the line below to test your deployed backend instead!
+# @baseUrl = https://fixmycampus-qk2i.onrender.com/api
+
+### 1. Test Server is Running
+GET http://localhost:3000/
+
+### 2. Student Signup (This was giving the 500 error)
+POST {{baseUrl}}/auth/student/signup
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "usn": "1XX22XX001",
+  "password": "password123",
+  "branch": "CSE",
+  "year": 1,
+  "hostelBlock": "Block A",
+  "roomNumber": "101"
+}
+
+### 3. Student Login
+POST {{baseUrl}}/auth/student/login
+Content-Type: application/json
+
+{
+  "usn": "1XX22XX001",
+  "password": "password123"
+}
+
+### 4. Admin/Warden Signup
+POST {{baseUrl}}/auth/admin/signup
+Content-Type: application/json
+
+{
+  "name": "Warden Smith",
+  "email": "warden@campus.edu",
+  "password": "password123",
+  "role": "warden",
+  "department": "Hostel Management",
+  "hostelAssigned": "Block A"
+}
+
+### 5. Get All Complaints (Requires Auth Token)
+# Paste the token you got from the login response below after 'Bearer '
+GET {{baseUrl}}/complaints
+Authorization: Bearer YOUR_TOKEN_HERE
+

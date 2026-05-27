@@ -28,6 +28,7 @@ router.post('/student/signup', async (req, res) => {
     const token = jwt.sign({ id: student._id, role: 'student' }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ token, student: { id: student._id, name: student.name, usn: student.usn } });
   } catch (error) {
+    console.error("Student Signup Error:", error);
     res.status(500).json({ error: 'Server error' });
   }
 });
