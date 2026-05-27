@@ -7,7 +7,6 @@ import {
   PlusCircle,
   ListChecks,
   BarChart3,
-  Settings,
   LogOut,
   GitBranch,
   Send,
@@ -116,10 +115,6 @@ export const AppShell = ({ role, view, onNavigate, onLogout, children }: AppShel
           })}
 
           <div className="pt-6 mt-6 border-t border-sidebar-border space-y-1">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent">
-              <Settings className="h-4 w-4" />
-              Settings
-            </button>
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive-soft transition-colors"
