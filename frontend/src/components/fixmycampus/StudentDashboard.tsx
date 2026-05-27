@@ -42,11 +42,11 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote, loa
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-6 sm:p-8 shadow-glow">
-        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary-foreground/10 blur-2xl" />
-        <div className="absolute -right-4 bottom-0 h-32 w-32 rounded-full bg-primary-foreground/10 blur-xl" />
+      <div className="relative overflow-hidden rounded-2xl bg-primary/10 border border-primary/20 p-6 sm:p-8 shadow-sm">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/20 blur-2xl" />
+        <div className="absolute -right-4 bottom-0 h-32 w-32 rounded-full bg-primary/20 blur-xl" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="text-primary-foreground">
+          <div className="text-foreground">
             <p className="text-sm font-medium opacity-90">Hello, {user.name || "Student"}</p>
             <h1 className="text-2xl sm:text-3xl font-bold mt-1">Have an issue? We've got you.</h1>
             <p className="text-sm opacity-90 mt-1.5 max-w-md">
@@ -56,7 +56,7 @@ export const StudentDashboard = ({ complaints, onNavigate, onSelect, onVote, loa
           <Button
             size="lg"
             onClick={() => onNavigate("submit")}
-            className="bg-card text-primary hover:bg-card/90 rounded-xl font-semibold shrink-0 shadow-md"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shrink-0 shadow-md"
           >
             <Plus className="h-4 w-4 mr-1.5" />
             New Complaint
