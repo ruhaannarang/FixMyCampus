@@ -221,7 +221,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
               <Input
                 id="emailUsn"
                 type={role === 'student' ? 'text' : 'email'}
-                placeholder={role === 'student' ? '1RV20CS001' : 'you@campus.edu'}
+                placeholder={role === 'student' ? '1MS20CS001' : 'you@campus.edu'}
                 value={emailUsn}
                 onChange={(e) => setEmailUsn(e.target.value)}
                 required
