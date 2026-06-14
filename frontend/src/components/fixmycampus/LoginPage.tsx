@@ -142,7 +142,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">2,400+ students</span> already
+              <span className="font-semibold text-foreground">MSRIT students</span> already
               reporting smarter
             </p>
           </div>
