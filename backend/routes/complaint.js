@@ -11,7 +11,7 @@ router.post('/newcomplaint', verifyStudent, upload.single('image'), async (req, 
     
     let imageUrl = '';
     if (req.file) {
-      imageUrl = '/uploads/' + req.file.filename;
+      imageUrl = req.file.path;
     }
 
     const complaint = new Complaint({
