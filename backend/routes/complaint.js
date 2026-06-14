@@ -5,15 +5,12 @@ const { verifyStudent, verifyAdmin, verifyAnyUser } = require('../middleware/aut
 const { upload } = require('../config/cloudinary');
 
 // Create a new complaint (Student only)
-router.post('/newcomplaint', verifyStudent, upload.single('image'), async (req, res) => {
+router.post('/newcomplaint', verifyStudent, async (req, res) => {
   try {
-    const { title, description, category, isAnonymous } = req.body;
+    const { title, description, category, isAnonymous, image } = req.body;
     
-    let imageUrl = '';
-    if (req.file) {
-      imageUrl = req.file.path;
-    }
-
+    let imageUrl = image || '';
+    
     const complaint = new Complaint({
       title,
       description,

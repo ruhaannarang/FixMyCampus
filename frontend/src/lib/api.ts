@@ -65,11 +65,14 @@ export const api = {
     return res.json();
   },
 
-  createComplaint: async (formData: FormData) => {
+  createComplaint: async (data: any) => {
     const res = await fetch(`${API_BASE}/complaints/newcomplaint`, {
       method: 'POST',
-      headers: getAuthHeader(),
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to create complaint');
     return res.json();

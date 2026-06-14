@@ -66,16 +66,32 @@ export const SubmitComplaint = ({ onNavigate, complaints, onVote, onSelect, refr
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("category", category);
-      formData.append("isAnonymous", isAnonymous.toString());
+      let imageUrl = "";
       if (file) {
-        formData.append("image", file);
+        const uploadData = new FormData();
+        uploadData.append("file", file);
+        uploadData.append("upload_preset", "s+ve_posts");
+        uploadData.append("cloud_name", "danmv4rdq");
+        const res = await fetch(
+          "https://api.cloudinary.com/v1_1/danmv4rdq/image/upload",
+          {
+            method: "post",
+            body: uploadData,
+          },
+        );
+        const cloudData = await res.json();
+        imageUrl = cloudData.secure_url;
       }
 
-      const newComplaint = await api.createComplaint(formData);
+      const payload = {
+        title,
+        description,
+        category,
+        isAnonymous,
+        image: imageUrl
+      };
+
+      const newComplaint = await api.createComplaint(payload);
       toast.success("Complaint submitted!", {
         description: `We've assigned ID ${newComplaint._id.substring(0, 8)}. Track its status anytime.`,
       });
